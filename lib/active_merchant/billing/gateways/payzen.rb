@@ -1,7 +1,7 @@
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class PayzenGateway < Gateway
-      self.test_url = self.live_url = 'http://api.payzen.io/'
+      self.test_url = self.live_url = 'http://api.payzen.io/api'
       self.supported_countries = ['DE', 'FR', 'BR']
       self.supported_cardtypes = [:visa, :master, :american_express]
       self.homepage_url = 'https://api.payzen.io/'
@@ -9,6 +9,7 @@ module ActiveMerchant #:nodoc:
 
       def initialize(options = {})
         requires!(options, :login)
+        requires!(options, :shop_id)
         super
       end
 
@@ -82,9 +83,10 @@ module ActiveMerchant #:nodoc:
         add_entry parameters, :amount, money
         headers = {
           "Content-Type" => "application/json",
+          "Accept" => "application/json",
           "Authorization" => "Basic #{Base64.strict_encode64(options[:login] + ':').strip}"
         }
-        url = "#{live_url}/charges"
+        url = "#{live_url}/pos/#{options[:shop_id]}/charges"
         begin
           body = parse(ssl_post(url, post_data(action, parameters), headers))
         rescue ResponseError => e
