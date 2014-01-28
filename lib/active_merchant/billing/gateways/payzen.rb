@@ -1,7 +1,7 @@
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class PayzenGateway < Gateway
-      self.test_url = self.live_url = 'http://api.payzen.io/' # FIX ME ASAP!!!
+      self.test_url = self.live_url = 'http://api.payzen.io/'
       self.supported_countries = ['DE', 'FR', 'BR']
       self.supported_cardtypes = [:visa, :master, :american_express]
       self.homepage_url = 'https://api.payzen.io/'
@@ -95,6 +95,7 @@ module ActiveMerchant #:nodoc:
 
         message = 'Internal error'
         success = false
+        options = {}
         begin
           charge_status = body['charge']['status']
           messages = body['charge']['messages']
@@ -105,7 +106,7 @@ module ActiveMerchant #:nodoc:
             message = 'Transaction approved.' if success
           end
           if success
-            # TODO - Retrieve transaction id, put it in authorization
+            options[:authorization] = body['charge']['id']
           end
         rescue
         end
