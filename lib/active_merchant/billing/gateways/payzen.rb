@@ -52,17 +52,20 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_invoice(post, options)
+        # TODO - Fix this in the API!
+        options[:currency] = '978' if options[:currency] == "EUR"
         add_entry post, :currency, options[:currency]
       end
 
       def add_creditcard(post, creditcard)
         card = {}
-        add_entry card, :method, CARD_TYPE[creditcard.brand]
-        add_entry card, :pan, creditcard.number
-        add_entry card, :exp_month, creditcard.month
-        add_entry card, :exp_year, creditcard.year
-        add_entry card, :csc, creditcard.verification_value
-        cards = (post[:available_instruments] ||= [])
+        # add_entry card, :method, CARD_TYPE[creditcard.brand]
+        add_entry card, :method, 'CB'
+        add_entry card, :cardNumber, creditcard.number
+        add_entry card, :expMonth, creditcard.month
+        add_entry card, :expYear, creditcard.year
+        add_entry card, :cvv, creditcard.verification_value
+        cards = (post[:usedInstruments] ||= [])
         cards << card
       end
 
@@ -87,6 +90,7 @@ module ActiveMerchant #:nodoc:
           "Authorization" => "Basic #{Base64.strict_encode64(options[:login] + ':').strip}"
         }
         url = "#{live_url}/pos/#{options[:shop_id]}/charges"
+                
         begin
           body = parse(ssl_post(url, post_data(action, parameters), headers))
         rescue ResponseError => e
@@ -95,20 +99,23 @@ module ActiveMerchant #:nodoc:
 
         Rails.logger.info body
 
+        # id = body['id']
+        # url = "#{live_url}/charges/#{id}"
+        # r = ssl_get(url, headers)
+        
         message = 'Internal error'
         success = false
         options = {}
         begin
-          charge_status = body['charge']['status']
-          messages = body['charge']['messages']
+          charge_status = body['status']
           success = (charge_status == 'complete')
-          if messages.to_a.any?
-            message = messages.last['description']
+          if success
+            message = 'Transaction approved.'
           else
-            message = 'Transaction approved.' if success
+            message = 'Payment refused.'
           end
           if success
-            options[:authorization] = body['charge']['id']
+            options[:authorization] = body['id']
           end
         rescue
         end
